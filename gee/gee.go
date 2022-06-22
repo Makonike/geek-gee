@@ -1,40 +1,38 @@
 package gee
 
 import (
-	"fmt"
 	"net/http"
 )
 
-type HandlerFunc func(w http.ResponseWriter, r *http.Request)
+type HandlerFunc func(ctx *Context)
 
 // Engine is the uni handler for all request
 type Engine struct {
-	router map[string]HandlerFunc
+	router *router
 }
 
 func New() *Engine {
-	return &Engine{router: make(map[string]HandlerFunc)}
+	return &Engine{router: newRouter()}
 }
 
 // addRoute add route
 func (engine *Engine) addRoute(method string, pattern string, handler HandlerFunc) {
-	key := method + "-" + pattern
-	engine.router[key] = handler
+	engine.router.addRoute(method, pattern, handler)
 }
 
 func (engine *Engine) GET(pattern string, handler HandlerFunc) {
-	engine.addRoute("GET", pattern, handler)
+	engine.router.addRoute("GET", pattern, handler)
 }
 
 func (engine *Engine) POST(pattern string, handler HandlerFunc) {
-	engine.addRoute("POST", pattern, handler)
+	engine.router.addRoute("POST", pattern, handler)
 }
 func (engine *Engine) PUT(pattern string, handler HandlerFunc) {
-	engine.addRoute("PUT", pattern, handler)
+	engine.router.addRoute("PUT", pattern, handler)
 }
 
 func (engine *Engine) DELETE(pattern string, handler HandlerFunc) {
-	engine.addRoute("DELETE", pattern, handler)
+	engine.router.addRoute("DELETE", pattern, handler)
 }
 
 func (engine *Engine) Run(addr string) (err error) {
@@ -43,10 +41,6 @@ func (engine *Engine) Run(addr string) (err error) {
 
 // ServeHTTP 解析请求路径，分发处理方法
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	key := req.Method + "-" + req.URL.Path
-	if handler, ok := engine.router[key]; ok {
-		handler(w, req)
-	} else {
-		fmt.Fprintf(w, "404 NOT FOUND: %s\n", req.URL)
-	}
+	c := newContext(w, req)
+	engine.router.handle(c)
 }
