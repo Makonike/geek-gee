@@ -49,7 +49,7 @@ func (n *node) insert(pattern string, parts []string, height int) {
 			pattern:  "",
 			part:     part,
 			children: nil,
-			isWild:   parts[0] == "*" || parts[0] == ":",
+			isWild:   part[0] == ':' || part[0] == '*',
 		}
 		n.children = append(n.children, child)
 	}
@@ -58,7 +58,6 @@ func (n *node) insert(pattern string, parts []string, height int) {
 }
 
 func (n *node) search(parts []string, height int) *node {
-
 	// 匹配查找
 	if len(parts) == height || strings.HasPrefix(n.part, "*") {
 		if n.pattern == "" {
