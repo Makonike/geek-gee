@@ -15,6 +15,8 @@ type Context struct {
 	Method     string
 	StatusCode int
 	Params     map[string]string
+	handlers   []HandlerFunc // middlewares
+	index      int           // 记录当前是执行到第几个中间件，类似于SpringAOP的增强函数调用链
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -23,6 +25,16 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 		Req:    req,
 		Path:   req.URL.Path,
 		Method: req.Method,
+		index:  -1,
+	}
+}
+
+// Next TODO: handler优先级
+func (c *Context) Next() {
+	c.index++
+	s := len(c.handlers)
+	for ; c.index < s; c.index++ {
+		c.handlers[c.index](c)
 	}
 }
 

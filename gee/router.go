@@ -72,13 +72,18 @@ func (r *router) getRoute(method, path string) (*node, map[string]string) {
 	return nil, nil
 }
 
+// 将匹配到的handler都加紧到执行handler中，调用Next()去执行
 func (r *router) handle(c *Context) {
 	n, param := r.getRoute(c.Method, c.Path)
 	if n != nil {
-		c.Params = param
 		key := c.Method + "-" + n.pattern
-		r.handlers[key](c)
+		c.Params = param
+		c.handlers = append(c.handlers, r.handlers[key])
 	} else {
-		c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
+		// 默认的404handler
+		c.handlers = append(c.handlers, func(ctx *Context) {
+			ctx.String(http.StatusNotFound, "404 NOT FOUND: %s\n", ctx.Path)
+		})
 	}
+	c.Next()
 }

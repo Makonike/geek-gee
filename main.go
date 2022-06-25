@@ -2,8 +2,19 @@ package main
 
 import (
 	"geek-gin/gee"
+	"log"
 	"net/http"
+	"time"
 )
+
+func onlyForV2() gee.HandlerFunc {
+	return func(ctx *gee.Context) {
+		t := time.Now()
+		// 使用v2符合route的请求都会走这里,否则会走默认的404handler
+		ctx.String(http.StatusInternalServerError, "Internal Server Error")
+		log.Printf("[%d] %s in %v for group v2", ctx.StatusCode, ctx.Req.RequestURI, time.Since(t))
+	}
+}
 
 func main() {
 	r := gee.New()
@@ -25,6 +36,13 @@ func main() {
 		})
 		v1.GET("/hello/:name", func(ctx *gee.Context) {
 			ctx.JSON(http.StatusOK, gee.H{"name": ctx.Param("name")})
+		})
+	}
+	v2 := r.Group("/v2")
+	v2.Use(onlyForV2())
+	{
+		v2.GET("/hello/:name", func(ctx *gee.Context) {
+			ctx.String(http.StatusOK, "hello %s, you're at %s\n", ctx.Param("name"), ctx.Path)
 		})
 	}
 	r.GET("/hello", func(c *gee.Context) {
