@@ -42,6 +42,16 @@ func TestGetRoute(t *testing.T) {
 		t.Fatal("nil should be returned")
 	}
 
+	n, ps = r.getRoute("OPTIONS", "/b/c/")
+	if n != nil {
+		t.Fatal("nil should be returned")
+	}
+
+	n, ps = r.getRoute("GET", "")
+	if n != nil {
+		t.Fatal("nil should be returned")
+	}
+
 	n, ps = r.getRoute("GET", "/b")
 	if n == nil {
 		t.Fatal("nil shouldn't be returned")
@@ -69,5 +79,6 @@ func newTestRouter() *router {
 	r.addRoute("GET", "/b/c", nil)
 	r.addRoute("GET", "/b", nil)
 	r.addRoute("GET", "/assert/*filepath", nil)
+	r.addRoute("GET", "", nil)
 	return r
 }

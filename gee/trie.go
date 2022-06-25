@@ -60,6 +60,7 @@ func (n *node) insert(pattern string, parts []string, height int) {
 func (n *node) search(parts []string, height int) *node {
 	// 匹配查找
 	if len(parts) == height || strings.HasPrefix(n.part, "*") {
+		// 防止出现空串
 		if n.pattern == "" {
 			return nil
 		}
