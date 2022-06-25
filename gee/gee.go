@@ -2,7 +2,6 @@ package gee
 
 import (
 	"net/http"
-	"strings"
 )
 
 type HandlerFunc func(ctx *Context)
@@ -22,7 +21,9 @@ type Engine struct {
 }
 
 func New() *Engine {
-	engine := &Engine{router: newRouter()}
+	engine := &Engine{}
+	router := newRouter(engine)
+	engine.router = router
 	engine.RouterGroup = &RouterGroup{engine: engine}
 	engine.groups = []*RouterGroup{engine.RouterGroup}
 	return engine
@@ -74,15 +75,17 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 
 // ServeHTTP 解析请求路径，分发处理方法
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	var middlewares []HandlerFunc
-	// TODO: 每次都要重复遍历？考虑使用缓存
-	for _, v := range engine.groups {
-		// TODO: FIX /v22, /v23都会匹配到/v2
-		if strings.HasPrefix(req.URL.Path, v.prefix) {
-			middlewares = append(middlewares, v.middlewares...)
-		}
-	}
+	//var middlewares []HandlerFunc
+	//// TODO: 每次都要重复遍历太耗费性能了。考虑使用缓存
+	//// gin是在前缀树的节点中添加中间件的切片，这样在匹配动态路由并解析参数时，就可以同时获得各分组的中间件
+	//for _, v := range engine.groups {
+	//	// DONE: FIX /v22, /v23都会匹配到/v2
+	//	// 无法实现模糊匹配
+	//	if strings.HasPrefix(req.URL.Path, v.prefix) {
+	//		middlewares = append(middlewares, v.middlewares...)
+	//	}
+	//}
 	c := newContext(w, req)
-	c.handlers = middlewares
+	//c.handlers = middlewares
 	engine.router.handle(c)
 }

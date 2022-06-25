@@ -9,12 +9,14 @@ import (
 type router struct {
 	roots    map[string]*node
 	handlers map[string]HandlerFunc
+	engine   *Engine
 }
 
-func newRouter() *router {
+func newRouter(engine *Engine) *router {
 	return &router{
 		roots:    make(map[string]*node),
 		handlers: make(map[string]HandlerFunc),
+		engine:   engine,
 	}
 }
 
@@ -72,11 +74,17 @@ func (r *router) getRoute(method, path string) (*node, map[string]string) {
 	return nil, nil
 }
 
-// 将匹配到的handler都加紧到执行handler中，调用Next()去执行
+// 将匹配到的handler都加进到执行handler中，调用Next()去执行
 func (r *router) handle(c *Context) {
-	n, param := r.getRoute(c.Method, c.Path)
-	if n != nil {
-		key := c.Method + "-" + n.pattern
+	route, param := r.getRoute(c.Method, c.Path)
+	if route != nil {
+		// 使用route与分组前缀做匹配
+		for _, group := range r.engine.groups {
+			if strings.HasPrefix(route.pattern, group.prefix) {
+				c.handlers = append(c.handlers, group.middlewares...)
+			}
+		}
+		key := c.Method + "-" + route.pattern
 		c.Params = param
 		c.handlers = append(c.handlers, r.handlers[key])
 	} else {

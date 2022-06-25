@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewRouter(t *testing.T) {
-	r := newRouter()
+	r := newRouter(nil)
 	r.addRoute("GET", "/", nil)
 	r.addRoute("GET", "/hello/:name", nil)
 	r.addRoute("GET", "/b/c", nil)
@@ -63,7 +63,7 @@ func TestGetRoute(t *testing.T) {
 }
 
 func newTestRouter() *router {
-	r := newRouter()
+	r := newRouter(nil)
 	r.addRoute("GET", "/", nil)
 	r.addRoute("GET", "/hello/:name", nil)
 	r.addRoute("GET", "/b/c", nil)
