@@ -24,8 +24,7 @@ func FormatAsDate(t time.Time) string {
 }
 
 func main() {
-	r := gee.New()
-	r.Use(gee.Logger())
+	r := gee.Default()
 	r.GET("/", func(c *gee.Context) {
 		//fmt.Fprintf(c.Writer, "URL.Path = %q\n", c.Req.URL.Path)
 		res := make([]gee.H, 0)
@@ -33,6 +32,10 @@ func main() {
 			res = append(res, gee.H{k: v})
 		}
 		c.JSON(http.StatusOK, res)
+	})
+	r.GET("/panic", func(ctx *gee.Context) {
+		name := []string{"hi"}
+		ctx.String(http.StatusOK, name[1000])
 	})
 	r.SetFuncMap(template.FuncMap{
 		"FormatAsDate": FormatAsDate,
