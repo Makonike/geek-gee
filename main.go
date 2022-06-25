@@ -15,6 +15,18 @@ func main() {
 		}
 		c.JSON(http.StatusOK, res)
 	})
+	v1 := r.Group("/v1")
+	{
+		v1.GET("/", func(ctx *gee.Context) {
+			ctx.HTML(http.StatusOK, "<h1>Test Group Success</h1>")
+		})
+		v1.GET("/hello", func(ctx *gee.Context) {
+			ctx.HTML(http.StatusOK, "<h1>/v1/hello</h1>")
+		})
+		v1.GET("/hello/:name", func(ctx *gee.Context) {
+			ctx.JSON(http.StatusOK, gee.H{"name": ctx.Param("name")})
+		})
+	}
 	r.GET("/hello", func(c *gee.Context) {
 		//fmt.Fprintf(c.Writer, "URL.Path = %q\n", c.Req.URL.Path)
 		res := make([]gee.H, 0)
