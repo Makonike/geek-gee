@@ -2,6 +2,7 @@ package gee
 
 import (
 	"net/http"
+	"strings"
 )
 
 type HandlerFunc func(ctx *Context)
@@ -66,8 +67,22 @@ func (engine *Engine) Run(addr string) (err error) {
 	return http.ListenAndServe(addr, engine)
 }
 
+// Use add middlewares to group
+func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
+	group.middlewares = append(group.middlewares, middlewares...)
+}
+
 // ServeHTTP 解析请求路径，分发处理方法
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	var middlewares []HandlerFunc
+	// TODO: 每次都要重复遍历？考虑使用缓存
+	for _, v := range engine.groups {
+		// TODO: FIX /v22, /v23都会匹配到/v2
+		if strings.HasPrefix(req.URL.Path, v.prefix) {
+			middlewares = append(middlewares, v.middlewares...)
+		}
+	}
 	c := newContext(w, req)
+	c.handlers = middlewares
 	engine.router.handle(c)
 }
