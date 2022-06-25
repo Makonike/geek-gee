@@ -1,7 +1,9 @@
 package gee
 
 import (
+	"html/template"
 	"net/http"
+	"path"
 )
 
 type HandlerFunc func(ctx *Context)
@@ -16,8 +18,10 @@ type RouterGroup struct {
 // Engine is the uni handler for all request
 type Engine struct {
 	*RouterGroup
-	router *router
-	groups []*RouterGroup // store all groups
+	router        *router
+	groups        []*RouterGroup     // store all groups
+	htmlTemplates *template.Template // 模板标准库
+	funcMap       template.FuncMap
 }
 
 func New() *Engine {
@@ -86,6 +90,40 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	//	}
 	//}
 	c := newContext(w, req)
+	c.engine = engine
 	//c.handlers = middlewares
 	engine.router.handle(c)
+}
+
+// SetFuncMap 将所有的模板加载进内存
+func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
+	engine.funcMap = funcMap
+}
+
+// LoadHTMLGlob 自定义模板渲染函数
+func (engine *Engine) LoadHTMLGlob(pattern string) {
+	engine.htmlTemplates = template.Must(template.New("").Funcs(engine.funcMap).ParseGlob(pattern))
+}
+
+// 创建静态文件处理器
+func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
+	absolutePath := path.Join(group.prefix, relativePath)
+	// 从请求 URL 的路径中删除给定的前缀并调用处理程序 http.FileServer(fs)
+	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
+	return func(ctx *Context) {
+		file := ctx.Param("filepath")
+		if _, err := fs.Open(file); err != nil {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+		fileServer.ServeHTTP(ctx.Writer, ctx.Req)
+	}
+}
+
+// Static 解析请求地址并映射到服务器上文件的真实地址
+func (group *RouterGroup) Static(relativePath, root string) {
+	// TODO: http.Dir()可能会暴露敏感文件和目录
+	handler := group.createStaticHandler(relativePath, http.Dir(root))
+	urlPattern := path.Join(relativePath, "/*filepath")
+	group.GET(urlPattern, handler)
 }

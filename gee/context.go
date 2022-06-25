@@ -17,6 +17,7 @@ type Context struct {
 	Params     map[string]string
 	handlers   []HandlerFunc // middlewares
 	index      int           // 记录当前是执行到第几个中间件，类似于SpringAOP的增强函数调用链
+	engine     *Engine
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -83,8 +84,10 @@ func (c *Context) Data(code int, data []byte) {
 }
 
 // HTML 转换为html模板返回
-func (c *Context) HTML(code int, html string) {
+func (c *Context) HTML(code int, name string, data interface{}) {
 	c.SetHeader("Content-Type", "text/html")
 	c.Status(code)
-	c.Writer.Write([]byte(html))
+	if err := c.engine.htmlTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+		c.JSON(http.StatusInternalServerError, H{"code": http.StatusInternalServerError})
+	}
 }

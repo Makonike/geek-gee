@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"geek-gin/gee"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -16,8 +18,14 @@ func onlyForV2() gee.HandlerFunc {
 	}
 }
 
+func FormatAsDate(t time.Time) string {
+	year, month, day := t.Date()
+	return fmt.Sprintf("%d-%02d-%02d", year, month, day)
+}
+
 func main() {
 	r := gee.New()
+	r.Use(gee.Logger())
 	r.GET("/", func(c *gee.Context) {
 		//fmt.Fprintf(c.Writer, "URL.Path = %q\n", c.Req.URL.Path)
 		res := make([]gee.H, 0)
@@ -26,18 +34,16 @@ func main() {
 		}
 		c.JSON(http.StatusOK, res)
 	})
-	v1 := r.Group("/v1")
-	{
-		v1.GET("/", func(ctx *gee.Context) {
-			ctx.HTML(http.StatusOK, "<h1>Test Group Success</h1>")
-		})
-		v1.GET("/hello", func(ctx *gee.Context) {
-			ctx.HTML(http.StatusOK, "<h1>/v1/hello</h1>")
-		})
-		v1.GET("/hello/:name", func(ctx *gee.Context) {
-			ctx.JSON(http.StatusOK, gee.H{"name": ctx.Param("name")})
-		})
-	}
+	r.SetFuncMap(template.FuncMap{
+		"FormatAsDate": FormatAsDate,
+	})
+	r.LoadHTMLGlob("D:\\1\\nginx\\nginx-1.20.1\\course_selection\\html\\html\\account\\user/*")
+	r.Static("/css", "D:\\1\\nginx\\nginx-1.20.1\\course_selection\\html\\css/")
+	r.Static("/images", "D:\\1\\nginx\\nginx-1.20.1\\course_selection\\html\\images/")
+	r.GET("/ab", func(c *gee.Context) {
+		c.HTML(http.StatusOK, "login.html", nil)
+	})
+
 	v2 := r.Group("/v2")
 	v2.Use(onlyForV2())
 	{
